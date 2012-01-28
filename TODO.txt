@@ -1,0 +1,18 @@
+ * Statistics (0xC8)
+ * Inventory
+ * Signs (0x82)
+ * Enchantments (0x6C)
+ * Creative mode
+ * weather
+ * entities
+ * experience
+ * tile entities
+ * mobs
+ * items
+ * actions/animations/particles
+ * time
+ * block remove/placement
+ * health
+ * death/respawn
+ * what else?
+
