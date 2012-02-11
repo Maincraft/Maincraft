@@ -184,7 +184,7 @@ public class MainServer implements Server {
 
     public void loadConfig() {
         // load config
-        ConfigurationSerialization.registerClass(MaincraftConfig.class); // register!
+        SerializationConfig.registerAll(MaincraftConfig.class); // register!
         File configFile = new File("maincraft.yml");
         FileConfiguration fileConfig = null;
         MaincraftConfig wantedConfig = null;
