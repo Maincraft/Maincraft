@@ -48,6 +48,7 @@ import org.bukkit.plugin.ServicesManager;
 import org.bukkit.plugin.SimplePluginManager;
 import org.bukkit.plugin.SimpleServicesManager;
 import org.bukkit.plugin.java.JavaPluginLoader;
+import org.bukkit.plugin.messaging.Messenger;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.util.permissions.DefaultPermissions;
 
@@ -75,7 +76,6 @@ import tk.maincraft.world.MainWorld;
 import com.avaje.ebean.config.ServerConfig;
 
 public class MainServer implements Server {
-
     public static final int MINECRAFT_SERVER_PORT = 25566;
     public static final Random rand = new Random();
 
@@ -893,5 +893,20 @@ public class MainServer implements Server {
 
     public void broadcastPacket(OutputPacket packet) {
         netController.broadcastPacket(packet);
+    }
+
+    public Set<String> getListeningPluginChannels() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    public void sendPluginMessage(Plugin arg0, String arg1, byte[] arg2) {
+        // TODO Auto-generated method stub
+
+    }
+
+    public Messenger getMessenger() {
+        // TODO Auto-generated method stub
+        return null;
     }
 }

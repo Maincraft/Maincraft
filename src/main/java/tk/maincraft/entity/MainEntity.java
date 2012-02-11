@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 
 
+import org.bukkit.EntityEffect;
 import org.bukkit.Location;
 import org.bukkit.Server;
 import org.bukkit.World;
@@ -209,4 +210,9 @@ public abstract class MainEntity implements Entity {
         this.ticksLived = paramInt;
     }
 
+    @Override
+    public void playEffect(EntityEffect arg0) {
+        // TODO Auto-generated method stub
+
+    }
 }

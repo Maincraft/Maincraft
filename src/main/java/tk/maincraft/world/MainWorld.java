@@ -1,9 +1,11 @@
 package tk.maincraft.world;
 
 import java.io.File;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 
 
@@ -15,6 +17,7 @@ import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.TreeType;
 import org.bukkit.World;
+import org.bukkit.WorldType;
 import org.bukkit.block.Biome;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Arrow;
@@ -27,6 +30,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.generator.BlockPopulator;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.util.Vector;
 
 import tk.maincraft.MainServer;
@@ -35,7 +39,6 @@ import tk.maincraft.util.doublekeymap.DoubleKeyMap;
 import tk.maincraft.util.doublekeymap.GenericDoubleKeyMap;
 
 public class MainWorld implements World {
-
     private final Environment environment;
     private long seed;
     private boolean pvp;
@@ -482,6 +485,26 @@ public class MainWorld implements World {
 
     public EntityManager getEntityManager() {
         return entityManager;
+    }
+
+    public Set<String> getListeningPluginChannels() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    public void sendPluginMessage(Plugin arg0, String arg1, byte[] arg2) {
+        // TODO Auto-generated method stub
+
+    }
+
+    public <T extends Entity> Collection<T> getEntitiesByClass(Class<T>... arg0) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    public WorldType getWorldType() {
+        // TODO Auto-generated method stub
+        return null;
     }
 
 }

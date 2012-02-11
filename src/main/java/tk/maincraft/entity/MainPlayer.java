@@ -3,6 +3,7 @@ package tk.maincraft.entity;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 
@@ -19,6 +20,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerChatEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.map.MapView;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.util.Vector;
 
 import tk.maincraft.EventFactory;
@@ -484,6 +486,36 @@ public class MainPlayer extends MainHumanEntity implements Player, PacketClientU
             throw new IllegalArgumentException();
 
         this.packetClient = pc;
+    }
+
+    @Override
+    public Set<String> getListeningPluginChannels() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public void sendPluginMessage(Plugin arg0, String arg1, byte[] arg2) {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public boolean getAllowFlight() {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+    @Override
+    public void setAllowFlight(boolean arg0) {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public void setBedSpawnLocation(Location arg0) {
+        // TODO Auto-generated method stub
+
     }
 
 }
