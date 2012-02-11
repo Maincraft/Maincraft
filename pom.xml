@@ -27,9 +27,10 @@
                         </goals>
                         <configuration>
                             <artifactSet>
-                                <excludes>
-                                    <exclude>junit:junit</exclude>
-                                </excludes>
+                                <includes>
+                                    <include>me.main__.util:SerializationConfig</include>
+                                    <include>org.bukkit:bukkit</include>
+                                </includes>
                             </artifactSet>
                         </configuration>
                     </execution>
