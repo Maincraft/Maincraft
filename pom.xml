@@ -114,5 +114,9 @@
             <id>bukkit-repo</id>
             <url>http://repo.bukkit.org/content/repositories/public</url>
         </repository>
+        <repository>
+            <id>OnARandomBox</id> <!-- For SerializationConfig -->
+            <url>http://repo.onarandombox.com/content/repositories/bukkit-thirdparty</url>
+        </repository>
     </repositories>
 </project>
