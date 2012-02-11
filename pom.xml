@@ -2,7 +2,7 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>me.main__.maincraft</groupId>
+    <groupId>tk.maincraft</groupId>
     <artifactId>Maincraft</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
@@ -52,7 +52,7 @@
                 <configuration>
                     <archive>
                         <manifestEntries>
-                            <Main-Class>me.main__.maincraft.Main</Main-Class>
+                            <Main-Class>${project.groupId}.Main</Main-Class>
                             <Implementation-Title>Maincraft</Implementation-Title>
                             <Sealed>true</Sealed>
                         </manifestEntries>
