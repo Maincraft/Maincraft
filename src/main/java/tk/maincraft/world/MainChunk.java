@@ -10,6 +10,7 @@ import org.bukkit.entity.Entity;
 public class MainChunk implements Chunk {
 
     public static final int SIZE_X = 16, SIZE_Z = 16, HEIGHT = 128;
+    public static final int SIZE = SIZE_X * SIZE_Z * HEIGHT;
 
     private final MainWorld world;
     private final int x;
@@ -21,7 +22,7 @@ public class MainChunk implements Chunk {
     private byte[] blockLight;
 
     public MainChunk(MainWorld world, int x, int z, byte[] types) {
-        if (!(types.length == SIZE_X * SIZE_Z * HEIGHT))
+        if (types.length != SIZE)
             throw new IllegalArgumentException();
 
         this.world = world;
@@ -91,22 +92,19 @@ public class MainChunk implements Chunk {
     }
 
     public boolean unload(boolean save, boolean safe) {
-        // TODO Auto-generated method stub
-        return false;
+        return world.unloadChunk(x, z, save, safe);
     }
 
     public boolean unload(boolean save) {
-        // TODO Auto-generated method stub
-        return false;
+        return world.unloadChunk(x, z, save);
     }
 
     public boolean unload() {
-        // TODO Auto-generated method stub
-        return false;
+        return world.unloadChunk(this);
     }
 
     public byte[] serializeToByteArray() {
-        byte[] retval = new byte[(int) (SIZE_X * SIZE_Z * HEIGHT * (5D / 2D))];
+        byte[] retval = new byte[(int) (SIZE * (5D / 2D))];
 
         System.arraycopy(types, 0, retval, 0, types.length);
 
