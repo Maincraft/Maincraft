@@ -2,22 +2,14 @@ package tk.maincraft.world;
 
 import java.io.File;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 
-import org.bukkit.BlockChangeDelegate;
-import org.bukkit.Chunk;
-import org.bukkit.ChunkSnapshot;
-import org.bukkit.Difficulty;
-import org.bukkit.Effect;
-import org.bukkit.Location;
-import org.bukkit.TreeType;
-import org.bukkit.World;
-import org.bukkit.WorldType;
+import org.bukkit.*;
 import org.bukkit.block.Biome;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Arrow;
@@ -33,10 +25,15 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.util.Vector;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.RemovalListener;
+import com.google.common.cache.RemovalNotification;
+
 import tk.maincraft.MainServer;
+import tk.maincraft.Maincraft;
 import tk.maincraft.entity.MainPlayer;
-import tk.maincraft.util.doublekeymap.DoubleKeyMap;
-import tk.maincraft.util.doublekeymap.GenericDoubleKeyMap;
 
 public class MainWorld implements World {
     private final Environment environment;
@@ -50,8 +47,27 @@ public class MainWorld implements World {
 
     private final MainServer server;
     private final EntityManager entityManager;
-    private final DoubleKeyMap<Integer, Integer, MainChunk> chunkMap = new GenericDoubleKeyMap<Integer, Integer, MainChunk>(
-            HashMap.class);
+    //private final DoubleKeyMap<Integer, Integer, MainChunk> chunkMap = new GenericDoubleKeyMap<Integer, Integer, MainChunk>(HashMap.class);
+    private static final int CHUNK_MEMORY_TIME = Maincraft.getServer().getConfig().getIOSettings().getKeepChunkInMemoryTime();
+    private final Cache<ChunkCoords, MainChunk> chunkMap = CacheBuilder.newBuilder().softValues()
+            .expireAfterAccess(CHUNK_MEMORY_TIME, TimeUnit.MINUTES)
+            .removalListener(new RemovalListener<ChunkCoords, MainChunk>() {
+                public void onRemoval(RemovalNotification<ChunkCoords, MainChunk> arg0) {
+                    // TODO maybe saving?
+                }
+            })
+            .build(new CacheLoader<ChunkCoords, MainChunk>() {
+                public MainChunk load(ChunkCoords coords) throws Exception {
+                    int x = coords.x;
+                    int z = coords.z;
+                    // TODO implement some actual chunk-loading here since we currently only generate it
+                    Random r = new Random();
+                    // r.setSeed(0); // TODO seeds
+                    byte[] types = chunkGenerator.generate(MainWorld.this, r, x, z);
+                    MainChunk chunk = new MainChunk(MainWorld.this, x, z, types);
+                    return chunk;
+                }
+            });
     private final ChunkGenerator chunkGenerator;
 
     public MainWorld(MainServer server, String name, Environment env, ChunkGenerator chunkGenerator) {
@@ -93,29 +109,31 @@ public class MainWorld implements World {
     }
 
     public int getHighestBlockYAt(int x, int z) {
-        // TODO Auto-generated method stub
-        return 0;
+        return getHighestBlockAt(x, z).getY();
     }
 
     public int getHighestBlockYAt(Location location) {
-        // TODO Auto-generated method stub
-        return 0;
+        return getHighestBlockYAt(location.getBlockX(), location.getBlockZ());
     }
 
     public Block getHighestBlockAt(int x, int z) {
-        // TODO Auto-generated method stub
-        return null;
+        Block highest = this.getBlockAt(x, 0, z);
+        for (int y = 0; y < MainChunk.HEIGHT; y++) {
+            Block block = this.getBlockAt(x, y, z);
+            if (block.getType() != Material.AIR)
+                highest = block;
+        }
+        return highest;
     }
 
     public Block getHighestBlockAt(Location location) {
-        // TODO Auto-generated method stub
-        return null;
+        return getHighestBlockAt(location.getBlockX(), location.getBlockZ());
     }
 
     public Chunk getChunkAt(int x, int z) {
         loadChunk(x, z);
 
-        return chunkMap.get(x, z);
+        return chunkMap.getUnchecked(new ChunkCoords(x, z));
     }
 
     public Chunk getChunkAt(Location location) {
@@ -131,15 +149,15 @@ public class MainWorld implements World {
         if (!(chunk instanceof MainChunk))
             return false; // I wonder where that guy got that chunk-object from...
 
-        return chunkMap.contains((MainChunk) chunk);
+        return chunkMap.asMap().containsValue((MainChunk) chunk);
     }
 
     public Chunk[] getLoadedChunks() {
-        return chunkMap.getValues().toArray(new Chunk[0]);
+        return chunkMap.asMap().values().toArray(new Chunk[0]);
     }
 
     public boolean isChunkLoaded(int x, int z) {
-        return chunkMap.contains(x, z);
+        return chunkMap.asMap().containsKey(new ChunkCoords(x, z));
     }
 
     public void loadChunk(Chunk chunk) {
@@ -151,13 +169,8 @@ public class MainWorld implements World {
     }
 
     public boolean loadChunk(int x, int z, boolean generate) {
-        // TODO implement some actual chunk-loading here since we currently only generate it
-        Random r = new Random();
-        // r.setSeed(0); // TODO
-        byte[] types = chunkGenerator.generate(this, r, x, z);
-        MainChunk chunk = new MainChunk(this, x, z, types);
-        chunkMap.put(x, z, chunk);
-        return true;
+        // TODO this
+        return false;
     }
 
     public boolean unloadChunk(Chunk chunk) {
@@ -181,7 +194,7 @@ public class MainWorld implements World {
                     return false;
             }
         }
-        chunkMap.remove(x, z);
+        chunkMap.invalidate(getChunkAt(x, z));
         // this should be enough until we implement saving (TODO)!
         return true;
     }

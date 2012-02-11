@@ -13,6 +13,8 @@ public class IOSettings extends SerializationConfig {
     @Property
     private int chunkViewDistance;
     @Property
+    private int keepChunkInMemoryTime;
+    @Property
     private int entityNoRelVal;
 
     public IOSettings() {
@@ -26,6 +28,7 @@ public class IOSettings extends SerializationConfig {
     @Override
     public void setDefaults() {
         chunkViewDistance = 5;
+        keepChunkInMemoryTime = 5;
     }
 
     public int getViewDistance() {
@@ -44,4 +47,11 @@ public class IOSettings extends SerializationConfig {
         this.entityNoRelVal = entityNoRelVal;
     }
 
+    public int getKeepChunkInMemoryTime() {
+        return keepChunkInMemoryTime;
+    }
+
+    public void setKeepChunkInMemoryTime(int keepChunkInMemoryTime) {
+        this.keepChunkInMemoryTime = keepChunkInMemoryTime;
+    }
 }
