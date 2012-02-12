@@ -28,6 +28,7 @@ import org.bukkit.util.Vector;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
+import com.google.common.cache.CacheStats;
 import com.google.common.cache.RemovalListener;
 import com.google.common.cache.RemovalNotification;
 
@@ -49,11 +50,12 @@ public class MainWorld implements World {
     private final EntityManager entityManager;
     //private final DoubleKeyMap<Integer, Integer, MainChunk> chunkMap = new GenericDoubleKeyMap<Integer, Integer, MainChunk>(HashMap.class);
     private static final int CHUNK_MEMORY_TIME = Maincraft.getServer().getConfig().getIOSettings().getKeepChunkInMemoryTime();
-    private final Cache<ChunkCoords, MainChunk> chunkMap = CacheBuilder.newBuilder().softValues()
+    private final Cache<ChunkCoords, MainChunk> chunkMap = CacheBuilder.newBuilder().weakValues()
             .expireAfterAccess(CHUNK_MEMORY_TIME, TimeUnit.MINUTES)
             .removalListener(new RemovalListener<ChunkCoords, MainChunk>() {
                 public void onRemoval(RemovalNotification<ChunkCoords, MainChunk> arg0) {
                     // TODO maybe saving?
+                    System.err.println(arg0.getCause().toString());
                 }
             })
             .build(new CacheLoader<ChunkCoords, MainChunk>() {
@@ -69,6 +71,14 @@ public class MainWorld implements World {
                 }
             });
     private final ChunkGenerator chunkGenerator;
+
+    public CacheStats getCacheStats() {
+        return chunkMap.stats();
+    }
+
+    public long getNumberOfLoadedChunks() {
+        return chunkMap.size();
+    }
 
     public MainWorld(MainServer server, String name, Environment env, ChunkGenerator chunkGenerator) {
         this.server = server;

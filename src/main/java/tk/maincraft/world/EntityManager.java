@@ -322,7 +322,7 @@ public class EntityManager {
     }
 
     public void removePlayer(MainPlayer player) {
-        playerList.remove(player);
+        playerList.remove(player.getName());
     }
 
 }

@@ -53,6 +53,7 @@ import org.bukkit.util.permissions.DefaultPermissions;
 
 import tk.maincraft.command.ConfigCommand;
 import tk.maincraft.command.MainConsoleCommandSender;
+import tk.maincraft.command.WorldStatsCommand;
 import tk.maincraft.entity.MainPlayer;
 import tk.maincraft.network.NetworkController;
 import tk.maincraft.packet.PacketClient;
@@ -91,8 +92,7 @@ public class MainServer implements Server {
     private final Thread mainThread = new MainServerThread();
 
     private final Map<String, MainWorld> worlds = new ConcurrentHashMap<String, MainWorld>();
-    private final Set<MainPlayer> onlinePlayers = Collections
-            .newSetFromMap(new ConcurrentHashMap<MainPlayer, Boolean>());
+    private final Set<MainPlayer> onlinePlayers = Collections.newSetFromMap(new ConcurrentHashMap<MainPlayer, Boolean>());
 
     private boolean stopping = false;
 
@@ -131,6 +131,7 @@ public class MainServer implements Server {
 
         // register our commands
         commandMap.register("maincraft", new ConfigCommand(this));
+        commandMap.register("maincraft", new WorldStatsCommand(this));
 
         // we want to handle "noob"-plugins xD
         Logger.getLogger("Minecraft").setParent(log);
@@ -325,7 +326,7 @@ public class MainServer implements Server {
         } catch (IOException e) {
             log.severe("FAILED TO START SERVER!");
             e.printStackTrace();
-            shutdown();
+            System.exit(-1);
             return;
         }
         mainThread.start();

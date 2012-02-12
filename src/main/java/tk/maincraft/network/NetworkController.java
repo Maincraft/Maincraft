@@ -166,11 +166,11 @@ public class NetworkController {
             } catch (Exception e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
-            }
-            finally {
+            } finally {
                 client.disconnect();
                 if (client.getPlayer() != null)
                     server.handlePlayerDisconnect(client.getPlayer());
+                client.setPlayer(null);
                 if (!(clients.remove(id) == client))
                     throw new RuntimeException("That client got lost...");
 
