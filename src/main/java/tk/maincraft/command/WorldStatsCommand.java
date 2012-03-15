@@ -16,6 +16,7 @@ public class WorldStatsCommand extends MaincraftCommand {
                 "maincraft.worldstats", server);
     }
 
+    @Override
     public boolean executeCommand(CommandSender sender, String commandLabel, String[] args) {
         MainWorld world;
         if (args.length == 0) {

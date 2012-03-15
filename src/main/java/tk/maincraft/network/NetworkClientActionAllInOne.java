@@ -1,15 +1,11 @@
 package tk.maincraft.network;
 
-import java.net.SocketException;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import tk.maincraft.packet.PacketClient;
-import tk.maincraft.packet.PacketClientAction;
-import tk.maincraft.packet.UnexpectedSocketIOException;
 
 
 public class NetworkClientActionAllInOne<T> implements Future<T>, Runnable {
@@ -30,6 +26,7 @@ public class NetworkClientActionAllInOne<T> implements Future<T>, Runnable {
         this.task = task;
     }
 
+    @Override
     public void run() {
         synchronized (this) {
             if (cancelled)
@@ -45,11 +42,7 @@ public class NetworkClientActionAllInOne<T> implements Future<T>, Runnable {
                 result = theResult;
             }
             // these are only executed in the clienthandlingthreads,
-            // so they're allowed to throw SocketExceptions
-        } catch (UnexpectedSocketIOException e) {
-            throw e;
-        } catch (SocketException e) {
-            throw new UnexpectedSocketIOException(e);
+            // so they're allowed to throw Exceptions
         } catch (Exception e) {
             this.exception = e;
         }
@@ -67,6 +60,7 @@ public class NetworkClientActionAllInOne<T> implements Future<T>, Runnable {
         }
     }
 
+    @Override
     public boolean cancel(boolean mayInterruptIfRunning) {
         synchronized (this) {
             if (cancelled) {
@@ -83,18 +77,21 @@ public class NetworkClientActionAllInOne<T> implements Future<T>, Runnable {
         }
     }
 
+    @Override
     public boolean isCancelled() {
         synchronized (this) {
             return cancelled;
         }
     }
 
+    @Override
     public boolean isDone() {
         synchronized (this) {
             return done;
         }
     }
 
+    @Override
     public T get() throws InterruptedException, ExecutionException {
         try {
             return get(0, TimeUnit.MILLISECONDS);
@@ -103,6 +100,7 @@ public class NetworkClientActionAllInOne<T> implements Future<T>, Runnable {
         }
     }
 
+    @Override
     public T get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException,
             TimeoutException {
         synchronized (this) {

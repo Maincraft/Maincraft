@@ -4,7 +4,7 @@
 
     <groupId>tk.maincraft</groupId>
     <artifactId>Maincraft</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.2.3-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>Maincraft</name>
 
@@ -31,8 +31,31 @@
                                     <include>me.main__.util:SerializationConfig</include>
                                     <include>org.bukkit:bukkit</include>
                                     <include>com.google.guava:guava</include>
+                                    <include>tk.maincraft.util:MCPackets</include>
                                 </includes>
                             </artifactSet>
+                            <filters>
+                                <filter>
+                                    <!-- MCPackets brings it's own guava but we want to take ours -->
+                                    <artifact>tk.maincraft.util:MCPackets</artifact>
+                                    <includes>
+                                        <include>tk/maincraft/util/mcpackets/**</include>
+                                    </includes>
+                                    <excludes>
+                                        <exclude>com/google/**</exclude>
+                                    </excludes>
+                                </filter>
+                                <filter>
+                                    <!-- bukkit brings it's own guava but we want to use ours -->
+                                    <artifact>org.bukkit:bukkit</artifact>
+                                    <includes>
+                                        <include>org/bukkit/**</include>
+                                    </includes>
+                                    <excludes>
+                                        <exclude>com/google/**</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
                         </configuration>
                     </execution>
                 </executions>
@@ -64,6 +87,11 @@
     </build>
 
     <dependencies>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>11.0.1</version>
+        </dependency>
         <!-- Start of Test Dependencies -->
         <dependency>
             <groupId>junit</groupId>
@@ -109,9 +137,9 @@
             <version>1.0</version>
         </dependency>
         <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>11.0.1</version>
+            <groupId>tk.maincraft.util</groupId>
+            <artifactId>MCPackets</artifactId>
+            <version>1.2.3</version>
         </dependency>
     </dependencies>
 

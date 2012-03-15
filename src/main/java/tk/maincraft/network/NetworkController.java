@@ -12,14 +12,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-
 import org.bukkit.Bukkit;
 
 import tk.maincraft.MainServer;
-import tk.maincraft.packet.PacketNotFoundException;
-import tk.maincraft.packet.UnexpectedSocketIOException;
-import tk.maincraft.packet.in.InputPacket;
-import tk.maincraft.packet.out.OutputPacket;
+import tk.maincraft.util.mcpackets.Packet;
+import tk.maincraft.util.mcpackets.UnexpectedSocketIOException;
 
 public class NetworkController {
 
@@ -80,9 +77,9 @@ public class NetworkController {
         }
     }
 
-    public void broadcastPacket(OutputPacket packet) {
+    public void broadcastPacket(Packet packet) {
         for (NetworkClient nc : clients.values()) {
-            nc.schedulePacket(packet);
+            nc.send(packet);
         }
     }
 
@@ -103,6 +100,7 @@ public class NetworkController {
             Bukkit.getLogger().info("yay! serverthread!");
         }
 
+        @Override
         public void run() {
             while (listening) {
                 try {
@@ -132,6 +130,7 @@ public class NetworkController {
             clients.put(id, client);
         }
 
+        @Override
         public void run() {
             try {
                 Bukkit.getLogger().info("Handling client");
@@ -141,16 +140,8 @@ public class NetworkController {
                 while (client.isConnected() && client.getSocket().isConnected()
                         && !client.getSocket().isClosed()) {
                     Bukkit.getLogger().finer("Clienthandling-iteration");
-                    InputPacket packet;
-                    try {
-                        packet = PacketReader.read(client);
-                    } catch (PacketNotFoundException e) {
-                        e.printStackTrace();
-                        continue; // we want to record which packets we need
-                    }
 
-                    if (packet != null)
-                        packet.process(server);
+                    client.readAndHandleOnePacket();
 
                     if ((MainServer.rand.nextInt() % 15) == 1)
                         client.keepAlive();
@@ -161,11 +152,9 @@ public class NetworkController {
                 Bukkit.getLogger().info(
                         String.format("UnexpectedSocketIOException for client %s", clientsocket
                                 .getRemoteSocketAddress().toString()));
-            } catch (PacketNotFoundException e) {
-                client.kickNow("Packet not found -.-");
-            } catch (Exception e) {
+            } catch (Throwable t) {
                 // TODO Auto-generated catch block
-                e.printStackTrace();
+                t.printStackTrace();
             } finally {
                 client.disconnect();
                 if (client.getPlayer() != null)

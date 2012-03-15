@@ -22,8 +22,8 @@ import org.bukkit.GameMode;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.Server;
 import org.bukkit.World;
-import org.bukkit.WorldCreator;
 import org.bukkit.World.Environment;
+import org.bukkit.WorldCreator;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandException;
 import org.bukkit.command.CommandSender;
@@ -56,20 +56,19 @@ import tk.maincraft.command.MainConsoleCommandSender;
 import tk.maincraft.command.WorldStatsCommand;
 import tk.maincraft.entity.MainPlayer;
 import tk.maincraft.network.NetworkController;
-import tk.maincraft.packet.PacketClient;
-import tk.maincraft.packet.out.LoginPacket;
-import tk.maincraft.packet.out.OutputPacket;
-import tk.maincraft.packet.out.PlayerListItemPacket;
-import tk.maincraft.packet.out.PlayerPositionAndLookPacket;
-import tk.maincraft.packet.out.SpawnPositionPacket;
-import tk.maincraft.packet.out.impl.OutputLoginPacket;
-import tk.maincraft.packet.out.impl.OutputPlayerListItemPacket;
-import tk.maincraft.packet.out.impl.OutputPlayerPositionAndLookPacket;
-import tk.maincraft.packet.out.impl.OutputSpawnPositionPacket;
+import tk.maincraft.network.PacketClient;
 import tk.maincraft.scheduler.MainScheduler;
 import tk.maincraft.util.Versioning;
 import tk.maincraft.util.config.MaincraftConfig;
-import tk.maincraft.world.CleanroomChunkGenerator;
+import tk.maincraft.util.mcpackets.packet.LoginPacket;
+import tk.maincraft.util.mcpackets.packet.PlayerListItemPacket;
+import tk.maincraft.util.mcpackets.packet.PlayerPositionAndLookPacket;
+import tk.maincraft.util.mcpackets.packet.SpawnPositionPacket;
+import tk.maincraft.util.mcpackets.packet.impl.LoginPacketImpl;
+import tk.maincraft.util.mcpackets.packet.impl.PlayerListItemPacketImpl;
+import tk.maincraft.util.mcpackets.packet.impl.PlayerPositionAndLookPacketImpl;
+import tk.maincraft.util.mcpackets.packet.impl.SpawnPositionPacketImpl;
+import tk.maincraft.world.BasicChunkGenerator;
 import tk.maincraft.world.EntityManager;
 import tk.maincraft.world.MainWorld;
 
@@ -95,25 +94,29 @@ public class MainServer implements Server {
     private final Set<MainPlayer> onlinePlayers = Collections.newSetFromMap(new ConcurrentHashMap<MainPlayer, Boolean>());
 
     private boolean stopping = false;
-
+    
     public MainServer() {
         log = Logger.getLogger("Maincraft");
         log.setUseParentHandlers(false);
         Handler logHandler = new Handler() {
+            @Override
             public void publish(LogRecord record) {
                 System.out.println(this.getFormatter().format(record));
             }
 
+            @Override
             public void flush() {
                 System.out.flush();
             }
 
+            @Override
             public void close() throws SecurityException {
             }
         };
         logHandler.setFormatter(new Formatter() {
             private final DateFormat df = new SimpleDateFormat("HH:mm:ss");
 
+            @Override
             public String format(LogRecord record) {
                 StringBuilder sb = new StringBuilder();
 
@@ -152,13 +155,8 @@ public class MainServer implements Server {
         // let's add one dummy-world:
         enablePlugins(PluginLoadOrder.STARTUP);
         worlds.put("world", new MainWorld(this, "world", Environment.NORMAL,
-                new CleanroomChunkGenerator()));
+                new BasicChunkGenerator(0)));
         enablePlugins(PluginLoadOrder.POSTWORLD);
-    }
-
-    public FileConfiguration openConfig() {
-        FileConfiguration config = YamlConfiguration.loadConfiguration(new File("maincraft.yml"));
-        return config;
     }
 
     public void saveConfig() {
@@ -254,7 +252,7 @@ public class MainServer implements Server {
         return config;
     }
 
-    public void loadPlugins() {
+    private void loadPlugins() {
         pluginManager.registerInterface(JavaPluginLoader.class);
 
         File pluginFolder = new File("plugins");
@@ -265,11 +263,8 @@ public class MainServer implements Server {
                 try {
                     plugin.onLoad();
                 } catch (Throwable ex) {
-                    getLogger().log(
-                            Level.SEVERE,
-                            ex.getMessage() + " initializing "
-                                    + plugin.getDescription().getFullName()
-                                    + " (Is it up to date?)", ex);
+                    getLogger().log(Level.SEVERE, ex.getMessage() + " initializing "
+                                    + plugin.getDescription().getFullName() + " (Is it up to date?)", ex);
                 }
             }
         }
@@ -278,7 +273,7 @@ public class MainServer implements Server {
         }
     }
 
-    public void enablePlugins(PluginLoadOrder type) {
+    private void enablePlugins(PluginLoadOrder type) {
         Plugin[] plugins = pluginManager.getPlugins();
 
         for (Plugin plugin : plugins) {
@@ -332,14 +327,13 @@ public class MainServer implements Server {
         mainThread.start();
 
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+            @Override
             public void run() {
                 if (!stopping) {
                     System.err.println("=========================================");
                     System.err.println("What idiot tried to kill the server!?");
-                    System.err
-                            .println("Fortunately, the programmer was smart and added this piece of code :P");
-                    System.err
-                            .println("I'm now trying to initiate a safe shutdown, but I can't guarantee that this works!");
+                    System.err.println("Fortunately, the programmer was smart and added this piece of code :P");
+                    System.err.println("I'm now trying to initiate a safe shutdown, but I can't guarantee that this works!");
                     try {
                         stopping = true;
                         mainThread.interrupt();
@@ -363,6 +357,10 @@ public class MainServer implements Server {
         scheduler.tick();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void shutdown() {
         // notify the main-thread
         stopping = true;
@@ -419,29 +417,38 @@ public class MainServer implements Server {
         MainPlayer playerObj = entityManager.newPlayer(playername, client);
 
         int entityId = playerObj.getEntityId();
-        long seed = playerObj.getWorld().getSeed();
-        int mode = this.getDefaultGameMode().getValue();
+        String levelType = "DEFAULT"; // TODO
+        int mode = 1; //this.getDefaultGameMode().getValue();
         byte dimension = 0; // TODO
         byte difficulty = (byte) playerObj.getWorld().getDifficulty().getValue();
-        byte worldHeight = 0; // TODO
-        byte maxPlayers = (byte) this.getMaxPlayers();
-        LoginPacket loginPacket = new OutputLoginPacket(client, entityId, seed, mode, dimension,
-                difficulty, worldHeight, maxPlayers);
-        loginPacket.send();
+        int worldHeight = 128;
+        int maxPlayers = this.getMaxPlayers();
+        LoginPacket loginPacket = new LoginPacketImpl(entityId, "",
+                levelType, mode, dimension, difficulty, worldHeight, maxPlayers);
+        client.send(loginPacket);
 
         client.setPlayer(playerObj);
         entityManager.sendChunkUpdates(playerObj);
 
         // now do the spawnpoint-packet
-        SpawnPositionPacket spawnPacket = new OutputSpawnPositionPacket(client,
-                world.getSpawnLocation());
-        spawnPacket.send();
+        int spawnX = world.getSpawnLocation().getBlockX();
+        int spawnY = world.getSpawnLocation().getBlockY();
+        int spawnZ = world.getSpawnLocation().getBlockZ();
+        SpawnPositionPacket spawnPacket = new SpawnPositionPacketImpl(spawnX, spawnY, spawnZ);
+        client.send(spawnPacket);
 
-        PlayerPositionAndLookPacket posAndLookPacket = new OutputPlayerPositionAndLookPacket(
-                client, playerObj.getLocation(), 0, true);
-        posAndLookPacket.send();
+        double x = playerObj.getLocation().getX();
+        double y = playerObj.getLocation().getY();
+        double stance = y - 1.62D; // TODO is it real?
+        double z = playerObj.getLocation().getZ();
+        float yaw = playerObj.getLocation().getYaw();
+        float pitch = playerObj.getLocation().getPitch();
+        boolean onGround = true;
+        PlayerPositionAndLookPacket posAndLookPacket = new PlayerPositionAndLookPacketImpl(
+                x, y, stance, z, yaw, pitch, onGround);
+        client.send(posAndLookPacket);
 
-        playerObj.setOp(true); // FIXME: remove this, it's only debug!
+        playerObj.setOp(true); // FIXME TODO: remove this, it's only debug!
 
         log.finest("logon packet sent");
         onlinePlayers.add(playerObj);
@@ -459,15 +466,15 @@ public class MainServer implements Server {
 
         // add player to playerList
         // TODO ping
-        PlayerListItemPacket playerListPacket = new OutputPlayerListItemPacket(null, playername,
+        PlayerListItemPacket playerListPacket = new PlayerListItemPacketImpl(playername,
                 true, (short) 0);
-        playerListPacket.send();
+        this.netController.broadcastPacket(playerListPacket);
 
-        // update that player's playerlist
+        // send his playerlist
         for (Player player : getOnlinePlayers()) {
-            PlayerListItemPacket otherPlayerListPacket = new OutputPlayerListItemPacket(client,
+            PlayerListItemPacket otherPlayerListPacket = new PlayerListItemPacketImpl(
                     player.getName(), true, (short) 0);
-            otherPlayerListPacket.send();
+            client.send(otherPlayerListPacket);
         }
 
         return true;
@@ -488,97 +495,181 @@ public class MainServer implements Server {
         return "Example-MOTD";
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public String getName() {
         return "Maincraft";
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public String getVersion() {
         return "dev";
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public String getBukkitVersion() {
         return Versioning.getBukkitVersion();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public Player[] getOnlinePlayers() {
         return onlinePlayers.toArray(new Player[onlinePlayers.size()]);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public int getMaxPlayers() {
         // TODO Auto-generated method stub
         return 2;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public int getPort() {
         // TODO Auto-generated method stub
         return MINECRAFT_SERVER_PORT;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public int getViewDistance() {
         return getConfig().getIOSettings().getViewDistance();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public String getIp() {
         return netController.getMyIPString();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public String getServerName() {
         // TODO Auto-generated method stub
         return null;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public String getServerId() {
         // TODO Auto-generated method stub
         return null;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public boolean getAllowEnd() {
         // TODO Auto-generated method stub
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public boolean getAllowNether() {
         // TODO Auto-generated method stub
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public boolean hasWhitelist() {
         // TODO Auto-generated method stub
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void setWhitelist(boolean value) {
         // TODO Auto-generated method stub
 
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public Set<OfflinePlayer> getWhitelistedPlayers() {
         // TODO Auto-generated method stub
         return new HashSet<OfflinePlayer>();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void reloadWhitelist() {
         // TODO Auto-generated method stub
 
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public int broadcastMessage(String message) {
         return broadcast(message, BROADCAST_CHANNEL_USERS);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public String getUpdateFolder() {
         return "update";
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public File getUpdateFolderFile() {
         return new File(getUpdateFolder());
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public Player getPlayer(String name) {
         // TODO Auto-generated method stub
         return getPlayerExact(name);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public Player getPlayerExact(String name) {
         for (MainPlayer player : onlinePlayers) {
             if (player.getName().equals(name))
@@ -587,64 +678,119 @@ public class MainServer implements Server {
         return null;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<Player> matchPlayer(String name) {
         // TODO Auto-generated method stub
         return new ArrayList<Player>();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public PluginManager getPluginManager() {
         return pluginManager;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public BukkitScheduler getScheduler() {
         return scheduler;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public ServicesManager getServicesManager() {
         return servicesManager;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public List<World> getWorlds() {
         return Collections.unmodifiableList(new ArrayList<World>(worlds.values()));
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public World createWorld(String name, World.Environment environment) {
         return WorldCreator.name(name).environment(environment).createWorld();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public World createWorld(String name, World.Environment environment, long seed) {
         return WorldCreator.name(name).environment(environment).seed(seed).createWorld();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public World createWorld(String name, Environment environment, ChunkGenerator generator) {
         return WorldCreator.name(name).environment(environment).generator(generator).createWorld();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public World createWorld(String name, Environment environment, long seed,
             ChunkGenerator generator) {
         return WorldCreator.name(name).environment(environment).seed(seed).generator(generator)
                 .createWorld();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public World createWorld(WorldCreator creator) {
         // TODO Auto-generated method stub
         return null;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public boolean unloadWorld(String name, boolean save) {
         return unloadWorld(getWorld(name), save);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public boolean unloadWorld(World world, boolean save) {
         // TODO Auto-generated method stub
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public World getWorld(String name) {
         return worlds.get(name);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public World getWorld(UUID uid) {
         for (World w : worlds.values()) {
             if (w.getUID().equals(uid))
@@ -653,25 +799,45 @@ public class MainServer implements Server {
         return null;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public MapView getMap(short id) {
         // TODO Auto-generated method stub
         return null;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public MapView createMap(World world) {
         // TODO Auto-generated method stub
         return null;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void reload() {
         // TODO Auto-generated method stub
 
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public Logger getLogger() {
         return log;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public PluginCommand getPluginCommand(String name) {
         Command command = commandMap.getCommand(name);
 
@@ -683,11 +849,19 @@ public class MainServer implements Server {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void savePlayers() {
         // TODO Auto-generated method stub
 
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public boolean dispatchCommand(CommandSender sender, String commandLine)
             throws CommandException {
         if (commandMap.dispatch(sender, commandLine)) {
@@ -699,41 +873,73 @@ public class MainServer implements Server {
         return false;
     }
 
-    public void configureDbConfig(ServerConfig config) {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void configureDbConfig(ServerConfig serverConfig) {
         // TODO Auto-generated method stub
 
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public boolean addRecipe(Recipe recipe) {
         // TODO Auto-generated method stub
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public Map<String, String[]> getCommandAliases() {
         // TODO Auto-generated method stub
         return new HashMap<String, String[]>();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public int getSpawnRadius() {
         // TODO Auto-generated method stub
         return 0;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void setSpawnRadius(int value) {
         // TODO Auto-generated method stub
 
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public boolean getOnlineMode() {
         // TODO Auto-generated method stub
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public boolean getAllowFlight() {
         // TODO Auto-generated method stub
         return true;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public int broadcast(String message, String permission) {
         int count = 0;
         for (Player p : this.getOnlinePlayers()) {
@@ -745,54 +951,98 @@ public class MainServer implements Server {
         return count;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public OfflinePlayer getOfflinePlayer(String name) {
         return new MainOfflinePlayer(name);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public Set<String> getIPBans() {
         // TODO Auto-generated method stub
         return new HashSet<String>();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void banIP(String address) {
         // TODO Auto-generated method stub
 
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void unbanIP(String address) {
         // TODO Auto-generated method stub
 
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public Set<OfflinePlayer> getBannedPlayers() {
         // TODO Auto-generated method stub
         return new HashSet<OfflinePlayer>();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public Set<OfflinePlayer> getOperators() {
         // TODO Auto-generated method stub
         return new HashSet<OfflinePlayer>();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public GameMode getDefaultGameMode() {
         // TODO Auto-generated method stub
         return GameMode.SURVIVAL;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void setDefaultGameMode(GameMode mode) {
         // TODO Auto-generated method stub
 
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public ConsoleCommandSender getConsoleSender() {
         return commandSender;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public File getWorldContainer() {
         // TODO Auto-generated method stub
         return null;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public OfflinePlayer[] getOfflinePlayers() {
         // TODO Auto-generated method stub
         return new OfflinePlayer[0];
@@ -805,6 +1055,7 @@ public class MainServer implements Server {
         private long tickCounter = 0;
         private Object lock = new Object();
 
+        @Override
         public void run() {
             synchronized (lock) {
                 lastTickTime = System.currentTimeMillis();
@@ -861,12 +1112,13 @@ public class MainServer implements Server {
 
     public void handlePlayerDisconnect(MainPlayer player) {
         // remove from playerlist
-        PlayerListItemPacket playerListPacket = new OutputPlayerListItemPacket(null,
+        PlayerListItemPacket playerListPacket = new PlayerListItemPacketImpl(
                 player.getName(), false, (short) 0);
-        playerListPacket.send();
+        this.netController.broadcastPacket(playerListPacket);
         try {
             ((MainWorld) player.getWorld()).getEntityManager().removePlayer(player);
             onlinePlayers.remove(player);
+            //player.getClientView().clear();
 
             // call event
             PlayerQuitEvent event = new PlayerQuitEvent(player, new StringBuilder(
@@ -891,20 +1143,28 @@ public class MainServer implements Server {
         return onlinePlayers;
     }
 
-    public void broadcastPacket(OutputPacket packet) {
-        netController.broadcastPacket(packet);
-    }
-
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public Set<String> getListeningPluginChannels() {
         // TODO Auto-generated method stub
         return null;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void sendPluginMessage(Plugin arg0, String arg1, byte[] arg2) {
         // TODO Auto-generated method stub
 
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public Messenger getMessenger() {
         // TODO Auto-generated method stub
         return null;

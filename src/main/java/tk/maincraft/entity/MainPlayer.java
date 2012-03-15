@@ -26,8 +26,8 @@ import org.bukkit.util.Vector;
 import tk.maincraft.EventFactory;
 import tk.maincraft.MainServer;
 import tk.maincraft.network.NetworkClient;
+import tk.maincraft.network.PacketClient;
 import tk.maincraft.network.PacketClientUsing;
-import tk.maincraft.packet.PacketClient;
 import tk.maincraft.world.ClientView;
 
 public class MainPlayer extends MainHumanEntity implements Player, PacketClientUsing {

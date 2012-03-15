@@ -15,76 +15,138 @@ import org.bukkit.plugin.Plugin;
 import tk.maincraft.MainServer;
 
 public class MainConsoleCommandSender implements ConsoleCommandSender {
-
     private final MainServer server;
-    private final PermissibleBase perm = new PermissibleBase(this);
+    private final PermissibleBase permBase = new PermissibleBase(this);
 
     public MainConsoleCommandSender(MainServer server) {
         this.server = server;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void sendMessage(String message) {
         server.getLogger().info(ChatColor.stripColor(message));
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public Server getServer() {
         return server;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public String getName() {
         return "CONSOLE";
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public boolean isPermissionSet(String name) {
-        return perm.isPermissionSet(name);
+        return permBase.isPermissionSet(name);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public boolean isPermissionSet(Permission perm) {
-        return this.perm.isPermissionSet(perm);
+        return this.permBase.isPermissionSet(perm);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public boolean hasPermission(String name) {
-        return perm.hasPermission(name);
+        return permBase.hasPermission(name);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public boolean hasPermission(Permission perm) {
-        return this.perm.hasPermission(perm);
+        return this.permBase.hasPermission(perm);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public PermissionAttachment addAttachment(Plugin plugin, String name, boolean value) {
-        return perm.addAttachment(plugin, name, value);
+        return permBase.addAttachment(plugin, name, value);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public PermissionAttachment addAttachment(Plugin plugin) {
-        return perm.addAttachment(plugin);
+        return permBase.addAttachment(plugin);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public PermissionAttachment addAttachment(Plugin plugin, String name, boolean value, int ticks) {
-        return perm.addAttachment(plugin, name, value, ticks);
+        return permBase.addAttachment(plugin, name, value, ticks);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public PermissionAttachment addAttachment(Plugin plugin, int ticks) {
-        return perm.addAttachment(plugin, ticks);
+        return permBase.addAttachment(plugin, ticks);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void removeAttachment(PermissionAttachment attachment) {
-        perm.removeAttachment(attachment);
+        permBase.removeAttachment(attachment);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void recalculatePermissions() {
-        perm.recalculatePermissions();
+        permBase.recalculatePermissions();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public Set<PermissionAttachmentInfo> getEffectivePermissions() {
-        return perm.getEffectivePermissions();
+        return permBase.getEffectivePermissions();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public boolean isOp() {
         return true;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void setOp(boolean paramBoolean) {
         throw new UnsupportedOperationException("Can't set operator status of console!");
     }
-
 }

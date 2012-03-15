@@ -1,8 +1,12 @@
 package tk.maincraft.world;
 
-public class ChunkCoords {
-    public int x;
-    public int z;
+import java.io.Serializable;
+
+public class ChunkCoords implements Serializable {
+    private static final long serialVersionUID = 1L;
+
+    public final int x;
+    public final int z;
 
     public ChunkCoords(int x, int z) {
         this.x = x;

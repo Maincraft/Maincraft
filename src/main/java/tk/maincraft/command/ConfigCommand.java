@@ -1,18 +1,19 @@
 package tk.maincraft.command;
 
-
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 
 import tk.maincraft.MainServer;
 
 public class ConfigCommand extends MaincraftCommand {
-
     public ConfigCommand(MainServer server) {
         super("config", "Configure Maincraft.", "/<command> <property> <value>",
                 "maincraft.config", server);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean executeCommand(CommandSender sender, String commandLabel, String[] args) {
         if (args.length != 2)

@@ -15,29 +15,26 @@ import org.bukkit.util.Vector;
 import tk.maincraft.MainServer;
 import tk.maincraft.Maincraft;
 import tk.maincraft.entity.MainPlayer;
-import tk.maincraft.packet.PacketClient;
-import tk.maincraft.packet.PacketClientAction;
-import tk.maincraft.packet.out.DestroyEntityPacket;
-import tk.maincraft.packet.out.EntityLookAndRelMovePacket;
-import tk.maincraft.packet.out.EntityLookPacket;
-import tk.maincraft.packet.out.EntityRelMovePacket;
-import tk.maincraft.packet.out.EntityTeleportPacket;
-import tk.maincraft.packet.out.MapChunkPacket;
-import tk.maincraft.packet.out.NamedEntitySpawnPacket;
-import tk.maincraft.packet.out.PreChunkPacket;
-import tk.maincraft.packet.out.impl.OutputDestroyEntityPacket;
-import tk.maincraft.packet.out.impl.OutputEntityLookAndRelMovePacket;
-import tk.maincraft.packet.out.impl.OutputEntityLookPacket;
-import tk.maincraft.packet.out.impl.OutputEntityRelMovePacket;
-import tk.maincraft.packet.out.impl.OutputEntityTeleportPacket;
-import tk.maincraft.packet.out.impl.OutputMapChunkPacket;
-import tk.maincraft.packet.out.impl.OutputNamedEntitySpawnPacket;
-import tk.maincraft.packet.out.impl.OutputPreChunkPacket;
+import tk.maincraft.network.PacketClient;
+import tk.maincraft.network.PacketClientAction;
 import tk.maincraft.util.RotationUtils;
+import tk.maincraft.util.mcpackets.packet.DestroyEntityPacket;
+import tk.maincraft.util.mcpackets.packet.EntityLookAndRelMovePacket;
+import tk.maincraft.util.mcpackets.packet.EntityLookPacket;
+import tk.maincraft.util.mcpackets.packet.EntityRelMovePacket;
+import tk.maincraft.util.mcpackets.packet.EntityTeleportPacket;
+import tk.maincraft.util.mcpackets.packet.NamedEntitySpawnPacket;
+import tk.maincraft.util.mcpackets.packet.PreChunkPacket;
+import tk.maincraft.util.mcpackets.packet.impl.DestroyEntityPacketImpl;
+import tk.maincraft.util.mcpackets.packet.impl.EntityLookAndRelMovePacketImpl;
+import tk.maincraft.util.mcpackets.packet.impl.EntityLookPacketImpl;
+import tk.maincraft.util.mcpackets.packet.impl.EntityRelMovePacketImpl;
+import tk.maincraft.util.mcpackets.packet.impl.EntityTeleportPacketImpl;
+import tk.maincraft.util.mcpackets.packet.impl.NamedEntitySpawnPacketImpl;
+import tk.maincraft.util.mcpackets.packet.impl.PreChunkPacketImpl;
 
 
 public class EntityManager {
-
     private final Map<String, MainPlayer> playerList = new ConcurrentHashMap<String, MainPlayer>();
     private final MainServer server;
     private final MainWorld world;
@@ -62,8 +59,8 @@ public class EntityManager {
         return newPlayer;
     }
 
-    private static final int VIEW_DISTANCE = Maincraft.getServer().getConfig().getIOSettings()
-            .getViewDistance();
+    private static final int VIEW_DISTANCE = Maincraft.getServer().getConfig()
+            .getIOSettings().getViewDistance();
 
     private static enum EntityUpdateReason {
         CHANGE_POSITION,
@@ -106,6 +103,7 @@ public class EntityManager {
                 requiredPlayers);
 
         player.getPacketClient().scheduleClientAction(new PacketClientAction<Void>() {
+            @Override
             public Void call(PacketClient client) throws Exception {
                 for (MainPlayer otherPlayer : requiredPlayers) {
                     if (!player.getClientView().isPlayerVisible(otherPlayer)) {
@@ -117,10 +115,10 @@ public class EntityManager {
                         byte pitch = RotationUtils
                                 .floatToByte(otherPlayer.getLocation().getPitch());
                         short currentItem = 0; // TODO
-                        NamedEntitySpawnPacket namedEntitySpawnPacket = new OutputNamedEntitySpawnPacket(
-                                player.getPacketClient(), otherPlayer.getEntityId(), otherPlayer
-                                        .getName(), x, y, z, yaw, pitch, currentItem);
-                        namedEntitySpawnPacket.send();
+                        NamedEntitySpawnPacket namedEntitySpawnPacket = new NamedEntitySpawnPacketImpl(
+                                otherPlayer.getEntityId(), otherPlayer.getName(),
+                                x, y, z, yaw, pitch, currentItem);
+                        player.getPacketClient().send(namedEntitySpawnPacket);
 
                         player.getClientView().showingPlayer(otherPlayer);
                     }
@@ -133,10 +131,10 @@ public class EntityManager {
                         byte yaw = RotationUtils.floatToByte(player.getLocation().getYaw());
                         byte pitch = RotationUtils.floatToByte(player.getLocation().getPitch());
                         short currentItem = 0; // TODO
-                        NamedEntitySpawnPacket namedEntitySpawnPacket = new OutputNamedEntitySpawnPacket(
-                                otherPlayer.getPacketClient(), player.getEntityId(), player
-                                        .getName(), x, y, z, yaw, pitch, currentItem);
-                        namedEntitySpawnPacket.send();
+                        NamedEntitySpawnPacket namedEntitySpawnPacket = new NamedEntitySpawnPacketImpl(
+                                player.getEntityId(), player.getName(),
+                                x, y, z, yaw, pitch, currentItem);
+                        otherPlayer.getPacketClient().send(namedEntitySpawnPacket);
 
                         otherPlayer.getClientView().showingPlayer(player);
                     }
@@ -147,9 +145,9 @@ public class EntityManager {
                             byte yaw1 = RotationUtils.floatToByte(player.getLocation().getYaw());
                             byte pitch1 = RotationUtils
                                     .floatToByte(player.getLocation().getPitch());
-                            EntityLookPacket lookPacket = new OutputEntityLookPacket(otherPlayer
-                                    .getPacketClient(), player.getEntityId(), yaw1, pitch1);
-                            lookPacket.send();
+                            EntityLookPacket lookPacket = new EntityLookPacketImpl(
+                                    player.getEntityId(), yaw1, pitch1);
+                            otherPlayer.getPacketClient().send(lookPacket);
                             break;
                         case CHANGE_POSITION:
                             Location oldLoc1 = player.getOldLocation();
@@ -163,17 +161,20 @@ public class EntityManager {
                             if (randomSaysYes1 && (Math.abs(diffX1) < 128)
                                     && (Math.abs(diffY1) < 128) && (Math.abs(diffZ1) < 128)) {
                                 // it's okay, it fits in relMove
-                                EntityRelMovePacket packet = new OutputEntityRelMovePacket(
-                                        otherPlayer.getPacketClient(), player.getEntityId(),
-                                        (byte) diffX1, (byte) diffY1, (byte) diffZ1);
-                                packet.send();
+                                EntityRelMovePacket packet = new EntityRelMovePacketImpl(
+                                        player.getEntityId(), (byte) diffX1, (byte) diffY1, (byte) diffZ1);
+                                otherPlayer.getPacketClient().send(packet);
                             }
                             else {
                                 // too big difference, we need a teleport-packet
-                                EntityTeleportPacket packet = new OutputEntityTeleportPacket(
-                                        otherPlayer.getPacketClient(), player.getEntityId(),
-                                        newLoc1);
-                                packet.send();
+                                int x = newLoc1.getBlockX();
+                                int y = newLoc1.getBlockY();
+                                int z = newLoc1.getBlockZ();
+                                float yaw = newLoc1.getYaw();
+                                float pitch = newLoc1.getPitch();
+                                EntityTeleportPacket packet = new EntityTeleportPacketImpl(
+                                        player.getEntityId(), x, y, z, yaw, pitch);
+                                otherPlayer.getPacketClient().send(packet);
                             }
                             break;
                         case CHANGE_LOOK_AND_POSITION: // we changed position
@@ -190,17 +191,20 @@ public class EntityManager {
                             if (randomSaysYes2 && (Math.abs(diffX2) < 128)
                                     && (Math.abs(diffY2) < 128) && (Math.abs(diffZ2) < 128)) {
                                 // it's okay, it fits in relMove
-                                EntityLookAndRelMovePacket packet = new OutputEntityLookAndRelMovePacket(
-                                        otherPlayer.getPacketClient(), player.getEntityId(),
-                                        (byte) diffX2, (byte) diffY2, (byte) diffZ2, yaw2, pitch2);
-                                packet.send();
-                            }
-                            else {
+                                EntityLookAndRelMovePacket packet = new EntityLookAndRelMovePacketImpl(
+                                        player.getEntityId(), (byte) diffX2, (byte) diffY2, (byte) diffZ2, yaw2, pitch2);
+                                otherPlayer.getPacketClient().send(packet);
+                            } else {
                                 // too big difference, we need a teleport-packet
-                                EntityTeleportPacket packet = new OutputEntityTeleportPacket(
-                                        otherPlayer.getPacketClient(), player.getEntityId(),
-                                        newLoc2);
-                                packet.send();
+                                // unpack location
+                                int x = newLoc2.getBlockX();
+                                int y = newLoc2.getBlockY();
+                                int z = newLoc2.getBlockZ();
+                                float yaw = newLoc2.getYaw();
+                                float pitch = newLoc2.getPitch();
+                                EntityTeleportPacket packet = new EntityTeleportPacketImpl(
+                                        player.getEntityId(), x, y, z, yaw, pitch);
+                                otherPlayer.getPacketClient().send(packet);
                             }
                             break;
                         default: // *sigh* :P
@@ -211,9 +215,8 @@ public class EntityManager {
                 }
 
                 for (MainPlayer otherPlayer : playersToHide) {
-                    DestroyEntityPacket destroyPacket = new OutputDestroyEntityPacket(client,
-                            otherPlayer.getEntityId());
-                    destroyPacket.send();
+                    DestroyEntityPacket destroyPacket = new DestroyEntityPacketImpl(otherPlayer.getEntityId());
+                    client.send(destroyPacket);
                 }
                 return null;
             }
@@ -237,26 +240,21 @@ public class EntityManager {
         }
 
         player.getPacketClient().scheduleClientAction(new PacketClientAction<Void>() {
+            @Override
             public Void call(PacketClient client) throws Exception {
                 for (ChunkCoords cc : requiredChunks) {
                     // send pre-chunks, if necessary
                     MainChunk chunk = (MainChunk) world.getChunkAt(cc.x, cc.z);
                     if (!player.getClientView().isChunkPreChunked(cc)) {
-                        PreChunkPacket packet = new OutputPreChunkPacket(client, cc.x, cc.z, true);
-                        packet.send();
+                        PreChunkPacket packet = new PreChunkPacketImpl(cc.x, cc.z, true);
+                        client.send(packet);
 
                         // now it is preChunked
                         player.getClientView().preChunkedChunk(cc);
                     }
 
                     if (!player.getClientView().wasChunkSent(cc)) {
-                        byte[] chunkdata = chunk.serializeToByteArray();
-                        MapChunkPacket packet = new OutputMapChunkPacket(client, cc.x
-                                * MainChunk.SIZE_X, (short) 0, cc.z * MainChunk.SIZE_Z,
-                                MainChunk.SIZE_X, MainChunk.HEIGHT, MainChunk.SIZE_Z, chunkdata);
-                        Bukkit.getLogger().finest(
-                                String.format("Constructed MapChunkPacket: %s", packet.toString()));
-                        packet.send();
+                        chunk.send(client);
 
                         // now it was sent
                         player.getClientView().sentChunk(cc);
@@ -265,8 +263,8 @@ public class EntityManager {
                 List<ChunkCoords> chunksToUnload = player.getClientView().getChunksToUnload(
                         requiredChunks);
                 for (ChunkCoords cc : chunksToUnload) {
-                    PreChunkPacket packet = new OutputPreChunkPacket(client, cc.x, cc.z, false);
-                    packet.send();
+                    PreChunkPacket packet = new PreChunkPacketImpl(cc.x, cc.z, false);
+                    client.send(packet);
 
                     // now it is unloaded
                     player.getClientView().unloadedChunk(cc);
@@ -314,7 +312,7 @@ public class EntityManager {
         sendPlayerUpdates(player, EntityUpdateReason.CHANGE_LOOK_AND_POSITION);
     }
 
-    private void validatePlayerMovement(MainPlayer player, Location newLoc) {
+    private static void validatePlayerMovement(MainPlayer player, Location newLoc) {
         Location oldLoc = player.getLocation().clone();
         player.setOldLocation(oldLoc);
         player.setLocation(newLoc);
@@ -323,6 +321,7 @@ public class EntityManager {
 
     public void removePlayer(MainPlayer player) {
         playerList.remove(player.getName());
+        world.cleanupChunkMap();
     }
 
 }

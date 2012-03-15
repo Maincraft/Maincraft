@@ -8,6 +8,8 @@ import java.util.logging.Logger;
 
 import org.bukkit.Bukkit;
 
+import tk.maincraft.util.mcpackets.Packets;
+
 public final class Versioning {
     public static String getBukkitVersion() {
         String result = "Unknown-Version";
@@ -31,6 +33,6 @@ public final class Versioning {
     }
 
     public static int getMinecraftProtocolVersion() {
-        return 22; // 1.0.0
+        return Packets.PROTOCOL_VERSION;
     }
 }

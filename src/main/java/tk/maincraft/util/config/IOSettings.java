@@ -27,7 +27,7 @@ public class IOSettings extends SerializationConfig {
 
     @Override
     public void setDefaults() {
-        chunkViewDistance = 5;
+        chunkViewDistance = 12;
         keepChunkInMemoryTime = 5;
     }
 
